@@ -4,6 +4,7 @@ import edu.upc.epsevg.prop.othello.players.HumanPlayer;
 import edu.upc.epsevg.prop.othello.players.RandomPlayer;
 import edu.upc.epsevg.prop.othello.Level;
 import edu.upc.epsevg.prop.othello.IPlayer;
+import edu.upc.epsevg.prop.othello.players.DaleBoPlayer;
 import edu.upc.epsevg.prop.othello.players.DesdemonaPlayer;
 
 
@@ -24,7 +25,7 @@ public class Game {
             @Override
             public void run() {
                 
-                IPlayer player1 = new HumanPlayer("Crazy Ivan");
+                IPlayer player1 = new DaleBoPlayer("Crazy Ivan");
                 //IPlayer player1 = new HumanPlayer("Human1");
                 IPlayer player2 = new DesdemonaPlayer(1);//GB
 
