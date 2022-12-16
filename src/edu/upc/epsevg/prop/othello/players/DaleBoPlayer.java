@@ -7,7 +7,9 @@ import edu.upc.epsevg.prop.othello.IAuto;
 import edu.upc.epsevg.prop.othello.IPlayer;
 import edu.upc.epsevg.prop.othello.Move;
 import edu.upc.epsevg.prop.othello.SearchType;
+import edu.upc.epsevg.prop.othello.players.Auxiliar;
 import java.awt.Point;
+import static java.text.NumberFormat.Field.INTEGER;
 import java.util.ArrayList;
 
 
@@ -18,6 +20,18 @@ public class DaleBoPlayer implements IPlayer, IAuto {
 
     String name;
     private int millorHeuristica;
+    private int profunditat = 6;
+    private int contJugades = 0;
+    private int[][] stabilityTable = {
+        {4,  -3,  2,  2,  2,  2, -3,  4,},
+        {-3, -4, -1, -1, -1, -1, -4, -3,},
+        {2,  -1,  1,  0,  0,  1, -1,  2,},
+        {2,  -1,  0,  1,  1,  0, -1,  2,},
+        {2,  -1,  0,  1,  1,  0, -1,  2,},
+        {2,  -1,  1,  0,  0,  1, -1,  2,},
+        {-3, -4, -1, -1, -1, -1, -4, -3,},
+        {4,  -3,  2,  2,  2,  2, -3,  4}
+    };
 
     public DaleBoPlayer(String name) {
         this.name = name;
@@ -43,9 +57,10 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             return new Move(null, 0L,0,  SearchType.MINIMAX); 
         } else {
             // cridem el minimax per a que ens retorni un moviment
-            int q = miniMax(s, 1);
+            int q = miniMax(s);
             
-            return new Move( moves.get(q), 0L, 0, SearchType.MINIMAX);         
+            Point punto = moves.get(q);
+            return new Move( punto, contJugades, profunditat, SearchType.MINIMAX);         
           }
     }
     
@@ -55,10 +70,10 @@ public class DaleBoPlayer implements IPlayer, IAuto {
      * @param profunditat numero de nodes als que baixarem per predir els moviments (profunditat del minimax).
      * @return la columna del el millor moviment depenent de la heuristica que haguem calculat.
      */
-    private int miniMax(GameStatus s, int profunditat) {
+    private int miniMax(GameStatus s) {
         int millorMov = -1;
-        int alpha = -10000;
-        int beta = 10000;
+        int alpha = -1000000000;
+        int beta = 1000000000;
         
         ArrayList<Point> moves = s.getMoves();
 
@@ -91,14 +106,16 @@ public class DaleBoPlayer implements IPlayer, IAuto {
     private int min(GameStatus sAux, int profunditat, int alpha, int beta) {
         // si la tirada realitzada resulta ser una solucio, tornem un valor molt alt per dir que hem guanyat la jugada i sumem 1 al numero de jugades
         if (sAux.checkGameOver()) {
-            return 100000;
+            contJugades = contJugades + 1;
+            return 1000000000;
             
         //si no es solucio i hem arribat a la profunditat 0 o ja no tenim mes opcions de tirada, sumarem 1 al numero de jugades i retornarem l'heuristica de la tirada.
         } else if (profunditat == 0 || (sAux.getMoves().isEmpty())) {
-            return heu(sAux);
+            contJugades = contJugades + 1;
+            return stability(sAux, sAux.getCurrentPlayer());
         }
         
-        int minValue = 10000;
+        int minValue = -1000000000;   
         
         ArrayList<Point> moves = sAux.getMoves();
 
@@ -130,14 +147,16 @@ public class DaleBoPlayer implements IPlayer, IAuto {
     private int max(GameStatus sAux, int profunditat, int alpha, int beta) {
         // si la tirada realitzada resulta ser una solucio, tornem un valor molt alt per dir que hem guanyat la jugada i sumem 1 al numero de jugades
         if (sAux.checkGameOver()) {
-            return -100000;
+            contJugades = contJugades + 1;
+            return -1000000000;
             
         //si no es solucio i hem arribat a la profunditat 0 o ja no tenim mes opcions de tirada, sumarem 1 al numero de jugades i retornarem l'heuristica de la tirada.
         } else if (profunditat == 0 || (sAux.getMoves().isEmpty())) {
-            return heu(sAux);
+            contJugades = contJugades + 1;
+            return stability(sAux, sAux.getCurrentPlayer());
         }
         
-        int maxValue = -10000;
+        int maxValue = 1000000000;
         
         ArrayList<Point> moves = sAux.getMoves();
 
@@ -160,38 +179,82 @@ public class DaleBoPlayer implements IPlayer, IAuto {
     /**
      * Funcio que calcula l'heuristica de la tirada.
      * @param t Tauler on s'ha de calcular l'heuristica de la tirada.
+     * @param player
      * @return L'heuristica calculada de la tirada.
      */
-    private int heu(GameStatus t) {
-        int score = t.getScore(t.getCurrentPlayer()) - t.getScore(CellType.opposite(t.getCurrentPlayer()));
-
-        // Si el juego se ha terminado.
-        if (t.isGameOver()) {
-            // if player has won
-            if (score > 0) {
-                return 100;
-            } // if player has lost (or tied)
-            else {
-                return -100;
-            }
-        } else {
-            int casillaBuena = 0;
-
-            //JUGADOR DE FICHAS NEGRAS:
-            for (int i = 0; i < 8; i++) {
-                CellType a = t.getPos(i, 0);
-                CellType b = t.getPos(0, i);
-                if (a == t.getCurrentPlayer()) {
-                    casillaBuena = casillaBuena + 20;
-                }
-                if (b == t.getCurrentPlayer()) {
-                    casillaBuena = casillaBuena + 20;
-                }
-            }
-            return score + casillaBuena;
-        }
+    
+    public int coin_parity(GameStatus t, CellType player) {
+        int player_coins = t.getScore(player);
+        int enemy_coins = t.getScore(CellType.opposite(player));
+        
+        return 100 * (player_coins - enemy_coins) / (player_coins + enemy_coins);
     }
-
+    
+    public int corners_gotcha(int Max_player_corners, int Min_player_corners){
+        if (Max_player_corners + Min_player_corners != 0){
+            return 100 * (Max_player_corners - Min_player_corners) / (Max_player_corners + Min_player_corners);
+        }
+        else
+            return 0;
+    }
+    
+    public int mobilty(GameStatus t, CellType player) {
+        int player_moves = t.getMoves().size();
+        
+        Auxiliar a = new Auxiliar(t);
+        a.transformEnemy(CellType.opposite(player));
+        int enemy_moves = a.getMoves().size();
+        
+        if (player_moves + enemy_moves != 0)
+	return 100 * (player_moves - enemy_moves) / (player_moves + enemy_moves);
+        else return 0;
+    }
+    
+    public int stability(GameStatus t, CellType player) {
+        
+        int heu = 0;
+        int size = t.getSize();
+        
+        CellType enemy = CellType.opposite(player);
+        
+        int player_corners = 0, enemy_corners = 0;
+        
+        // Comprobamos esquinas
+        if (t.getPos(0,0) != CellType.EMPTY) {
+            if (t.getPos(0,0) == player) player_corners += 1;
+            else enemy_corners += 1;
+        }
+        if (t.getPos(0, size-1) != CellType.EMPTY) {
+            if (t.getPos(0,size-1) == player) player_corners += 1;
+            else enemy_corners += 1;
+        }
+        if (t.getPos(size-1, size-1)  != CellType.EMPTY) {
+            if (t.getPos(size-1, size-1) == player) player_corners += 1;
+            else enemy_corners += 1;
+        }
+        if (t.getPos(size-1,0)  != CellType.EMPTY) {
+            if (t.getPos(size-1,0) == player) player_corners += 1;
+            else enemy_corners += 1;
+        }
+        
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if(t.getPos(i, j) == player){
+                    heu += stabilityTable[i][j];
+                }
+                if(t.getPos(i, j) == enemy){
+                    heu -= stabilityTable[i][j];
+                }
+            }  
+        }
+        
+        heu += corners_gotcha(player_corners, enemy_corners);
+        heu += coin_parity(t, player);
+        heu += mobilty(t, player);
+        
+        return heu;
+    }
+    
     /**
      * Ens avisa que hem de parar la cerca en curs perquè s'ha exhaurit el temps
      * de joc.
