@@ -54,7 +54,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
         if(moves.isEmpty())
         {
             // no podem moure, el moviment (de tipus Point) es passa null.
-            return new Move(null, 0L,0,  SearchType.MINIMAX); 
+            return new Move(null, contJugades,profunditat,  SearchType.MINIMAX); 
         } else {
             // cridem el minimax per a que ens retorni un moviment
             int q = miniMax(s);
@@ -115,7 +115,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             return stability(sAux, sAux.getCurrentPlayer());
         }
         
-        int minValue = -1000000000;   
+        int minValue = 1000000000;   
         
         ArrayList<Point> moves = sAux.getMoves();
 
@@ -156,7 +156,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             return stability(sAux, sAux.getCurrentPlayer());
         }
         
-        int maxValue = 1000000000;
+        int maxValue = -1000000000;
         
         ArrayList<Point> moves = sAux.getMoves();
 
@@ -168,7 +168,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             // si el max ens retorna un valor mes petit que el que ja tenim en el min, actualitzem aquest valor.
             maxValue = Math.max(min(tMax, profunditat-1, alpha, beta), maxValue);
             // calculem la beta entre el nou min_value i la beta que ja teniem
-            beta = Math.min(beta, maxValue);
+            beta = Math.max(beta, maxValue);
             // si fem la poda alpha-beta i beta es menor a alpha, no fa falta mirar mes nodes
             if (alpha >= beta) break;
         }
@@ -248,9 +248,9 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             }  
         }
         
-        heu += corners_gotcha(player_corners, enemy_corners);
+        /*heu += corners_gotcha(player_corners, enemy_corners);
         heu += coin_parity(t, player);
-        heu += mobilty(t, player);
+        heu += mobilty(t, player);*/
         
         return heu;
     }
