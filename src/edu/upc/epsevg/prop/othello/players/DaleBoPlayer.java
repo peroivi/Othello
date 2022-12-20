@@ -112,7 +112,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
         //si no es solucio i hem arribat a la profunditat 0 o ja no tenim mes opcions de tirada, sumarem 1 al numero de jugades i retornarem l'heuristica de la tirada.
         } else if (profunditat == 0 || (sAux.getMoves().isEmpty())) {
             contJugades = contJugades + 1;
-            return stability(sAux, sAux.getCurrentPlayer());
+            return heuristic(sAux, sAux.getCurrentPlayer());
         }
         
         int minValue = 10000;   
@@ -154,7 +154,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
         //si no es solucio i hem arribat a la profunditat 0 o ja no tenim mes opcions de tirada, sumarem 1 al numero de jugades i retornarem l'heuristica de la tirada.
         } else if (profunditat == 0 || (sAux.getMoves().isEmpty())) {
             contJugades = contJugades + 1;
-            return stability(sAux, sAux.getCurrentPlayer());
+            return heuristic(sAux, sAux.getCurrentPlayer());
         }
         
         int maxValue = -10000;
@@ -212,7 +212,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
         else return 0;
     }
     
-    public int stability(GameStatus t, CellType player) {
+    public int heuristic(GameStatus t, CellType player) {
         
         int heu = 0;
         int size = t.getSize();
@@ -238,14 +238,17 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             if (t.getPos(size-1,0) == player) player_corners += 1;
             else enemy_corners += 1;
         }
-        
+
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
+                if ((i == 0 && j == 0) || (i == 0 && j == size-1) || (i == size-1 && j == size-1) || (i == size-1 && j ==0)){
+                    continue;
+                }
                 if(t.getPos(i, j) == player){
-                    heu += stabilityTable[i][j];
+                    heu += stability(t, enemy, i, j);
                 }
                 if(t.getPos(i, j) == enemy){
-                    heu -= stabilityTable[i][j];
+                    heu -= stability(t, player, i, j);
                 }
             }  
         }
@@ -257,6 +260,25 @@ public class DaleBoPlayer implements IPlayer, IAuto {
         return heu;
     }
     
+    
+    public int stability(GameStatus t, CellType enemy, int i, int j) {
+        // Verificamos si la ficha está rodeada por fichas del mismo color en todas las direcciones
+        int aux = 4;
+        if (i > 0 && t.getPos(i-1, j) == enemy){
+            aux -= 1;
+        }
+        if (i < t.getSize()-1 && t.getPos(i+1, j) == enemy){
+            aux -= 1;
+        }
+        if (j > 0 && t.getPos(i, j-1) == enemy){
+            aux -= 1;
+        }
+        if (j < t.getSize()-1 && t.getPos(i, j+1) == enemy){
+            aux -= 1;
+        }
+        return aux;
+    }
+
     /**
      * Ens avisa que hem de parar la cerca en curs perquè s'ha exhaurit el temps
      * de joc.
