@@ -20,7 +20,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
 
     String name;
     private int millorHeuristica;
-    private int profunditat = 6;
+    private int profunditat = 8;
     private int contJugades = 0;
     private int[][] stabilityTable = {
         {4,  -3,  2,  2,  2,  2, -3,  4,},
@@ -72,8 +72,8 @@ public class DaleBoPlayer implements IPlayer, IAuto {
      */
     private int miniMax(GameStatus s) {
         int millorMov = -1;
-        int alpha = -1000000000;
-        int beta = 1000000000;
+        int alpha = -1000;
+        int beta = 1000;
         
         ArrayList<Point> moves = s.getMoves();
 
@@ -107,7 +107,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
         // si la tirada realitzada resulta ser una solucio, tornem un valor molt alt per dir que hem guanyat la jugada i sumem 1 al numero de jugades
         if (sAux.checkGameOver()) {
             contJugades = contJugades + 1;
-            return 1000000000;
+            return 100000;
             
         //si no es solucio i hem arribat a la profunditat 0 o ja no tenim mes opcions de tirada, sumarem 1 al numero de jugades i retornarem l'heuristica de la tirada.
         } else if (profunditat == 0 || (sAux.getMoves().isEmpty())) {
@@ -115,7 +115,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             return stability(sAux, sAux.getCurrentPlayer());
         }
         
-        int minValue = 1000000000;   
+        int minValue = 10000;   
         
         ArrayList<Point> moves = sAux.getMoves();
 
@@ -129,6 +129,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             // calculem la beta entre el nou min_value i la beta que ja teniem
             beta = Math.min(beta, minValue);
             // si fem la poda alpha-beta i beta es menor a alpha, no fa falta mirar mes nodes
+            //System.out.println(alpha + "  beta:" + beta);
             if (alpha >= beta) break;
         }
         
@@ -156,7 +157,7 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             return stability(sAux, sAux.getCurrentPlayer());
         }
         
-        int maxValue = -1000000000;
+        int maxValue = -10000;
         
         ArrayList<Point> moves = sAux.getMoves();
 
@@ -168,8 +169,9 @@ public class DaleBoPlayer implements IPlayer, IAuto {
             // si el max ens retorna un valor mes petit que el que ja tenim en el min, actualitzem aquest valor.
             maxValue = Math.max(min(tMax, profunditat-1, alpha, beta), maxValue);
             // calculem la beta entre el nou min_value i la beta que ja teniem
-            beta = Math.max(beta, maxValue);
+            alpha = Math.max(alpha, maxValue);
             // si fem la poda alpha-beta i beta es menor a alpha, no fa falta mirar mes nodes
+            //System.out.println(alpha + "  beta:" + beta);
             if (alpha >= beta) break;
         }
         
